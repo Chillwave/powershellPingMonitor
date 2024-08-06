@@ -1,5 +1,6 @@
 # PowershellPingMonitor - Chillwave on GitHub
 # Ensure there is an "IPs.txt" file with each address intended to monitor
+Write-Host "Ensure the script is being ran in the same directory from within PowerShell to load IPs from the text file."
 
 # Define the interval and output directory
 $intervalSeconds = 1800 # Interval is set to half hour
@@ -21,7 +22,7 @@ foreach ($targetIP in $targetDevices) {
     New-Item -ItemType Directory -Path $deviceFolder -Force | Out-Null
     $deviceFolders[$targetIP] = $deviceFolder
 }
-
+Write-Host "Killing the sessions will stop monitoring."
 Write-Host "Continuous ping started. Press Ctrl+C on each window or right click Powershell on the taskbar to close all sessions."
 
 foreach ($targetIP in $targetDevices) {
@@ -32,7 +33,7 @@ foreach ($targetIP in $targetDevices) {
     $argList += "`$outputRootDirectory = '$outputRootDirectory';"
     $argList += "`$deviceFolders = @{ '$targetIP' = '$($deviceFolders[$targetIP])' };"
     $argList += "while (`$true) {"
-    $argList += "    `$startTime = Get-Date";"
+    $argList += "    `$startTime = Get-Date;"
     $argList += "    `$timestamp = `$startTime.ToString('yyyyMMdd_HHmmss');"
     $argList += "    `$outputFile = Join-Path `$deviceFolders['$targetIP'] ('ping_summary_' + `$timestamp + '.txt');"
     $argList += "    `$pingCommand = 'ping $targetIP -n `$intervalSeconds';"
