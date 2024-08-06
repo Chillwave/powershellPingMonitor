@@ -16,15 +16,15 @@ foreach ($targetIP in $targetDevices) {
     $deviceFolders[$targetIP] = $deviceFolder
 }
 
-Write-Host "Continuous ping started. Please do not kill as this script is collecting diagnostic information."
-Write-Host "Press Ctrl+C to exit."
+Write-Host "Continuous ping started. Press Ctrl+C to exit."
 
-while ($true) {
-    foreach ($targetIP in $targetDevices) {
+$scriptBlock = {
+    param ($targetIP, $deviceFolder, $intervalSeconds)
+    while ($true) {
         $startTime = Get-Date
         $timestamp = $startTime.ToString("yyyyMMdd_HHmmss") # Timestamp for file naming
 
-        $outputFile = Join-Path $deviceFolders[$targetIP] ("ping_summary_" + $timestamp + ".txt")
+        $outputFile = Join-Path $deviceFolder ("ping_summary_" + $timestamp + ".txt")
         $pingCommand = "ping $targetIP -n $intervalSeconds"
 
         Write-Host "Running continuous ping for $targetIP for $intervalSeconds seconds."
@@ -34,11 +34,19 @@ while ($true) {
         Out-File -InputObject $pingSummary -FilePath $outputFile -Append
 
         Write-Host "`nElapsed Time: $((Get-Date) - $startTime) `n"
-        Write-Host "Last Ping Summary for $targetIP:"
+        Write-Host "Last Ping Summary for $targetIP `n"
         Write-Host $pingSummary
+        Start-Sleep -Seconds $intervalSeconds
     }
-
-    Start-Sleep -Seconds $intervalSeconds
 }
 
-# 2024 - Chillwave on Github
+$jobs = @()
+foreach ($targetIP in $targetDevices) {
+    $job = Start-ThreadJob -ScriptBlock $scriptBlock -ArgumentList $targetIP, $deviceFolders[$targetIP], $intervalSeconds
+    $jobs += $job
+}
+
+while ($true) {
+    # Just wait for the jobs to complete
+    Start-Sleep -Seconds 1
+}
