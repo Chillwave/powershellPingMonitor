@@ -2,9 +2,11 @@
 # Ensure there is an "IPs.txt" file with each address intended to monitor
 
 # Define the interval and output directory
-$intervalSeconds = 3600 # Interval is set to 1 hour
+$intervalSeconds = 1800 # Interval is set to half hour
 $outputRootDirectory = "." # Outputs to the current directory
+$startTime = Get-Date
 $elapsedTime = ((Get-Date) - $startTime)
+# Quiets the OP Subtraction error
 
 # Read the list of target devices from IPs.txt
 $targetDevices = @()
@@ -30,7 +32,7 @@ foreach ($targetIP in $targetDevices) {
     $argList += "`$outputRootDirectory = '$outputRootDirectory';"
     $argList += "`$deviceFolders = @{ '$targetIP' = '$($deviceFolders[$targetIP])' };"
     $argList += "while (`$true) {"
-    $argList += "    `$startTime = Get-Date;"
+    $argList += "    `$startTime = Get-Date";"
     $argList += "    `$timestamp = `$startTime.ToString('yyyyMMdd_HHmmss');"
     $argList += "    `$outputFile = Join-Path `$deviceFolders['$targetIP'] ('ping_summary_' + `$timestamp + '.txt');"
     $argList += "    `$pingCommand = 'ping $targetIP -n `$intervalSeconds';"
