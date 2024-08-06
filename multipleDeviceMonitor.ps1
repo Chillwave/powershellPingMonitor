@@ -34,7 +34,7 @@ $scriptBlock = {
         Out-File -InputObject $pingSummary -FilePath $outputFile -Append
 
         Write-Host "`nElapsed Time: $((Get-Date) - $startTime) `n"
-        Write-Host "Last Ping Summary for $targetIP `n"
+        Write-Host "Last Ping Summary for $targetIP:"
         Write-Host $pingSummary
         Start-Sleep -Seconds $intervalSeconds
     }
@@ -42,11 +42,17 @@ $scriptBlock = {
 
 $jobs = @()
 foreach ($targetIP in $targetDevices) {
-    $job = Start-ThreadJob -ScriptBlock $scriptBlock -ArgumentList $targetIP, $deviceFolders[$targetIP], $intervalSeconds
+    $job = Start-Job -ScriptBlock $scriptBlock -ArgumentList $targetIP, $deviceFolders[$targetIP], $intervalSeconds
     $jobs += $job
 }
 
 while ($true) {
-    # Just wait for the jobs to complete
-    Start-Sleep -Seconds 1
+    # Wait for the jobs to complete
+    $jobs | Wait-Job
+    $jobs | Remove-Job
+    $jobs = @()
+    foreach ($targetIP in $targetDevices) {
+        $job = Start-Job -ScriptBlock $scriptBlock -ArgumentList $targetIP, $deviceFolders[$targetIP], $intervalSeconds
+        $jobs += $job
+    }
 }
