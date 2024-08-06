@@ -1,6 +1,7 @@
 # Define the interval and output directory
 $intervalSeconds = 3600 # Interval is set to 1 hour
 $outputRootDirectory = "." # Outputs to the current directory
+$elapsedTime = ((Get-Date) - $startTime)
 
 # Read the list of target devices from IPs.txt
 $targetDevices = @()
@@ -30,11 +31,11 @@ foreach ($targetIP in $targetDevices) {
     $argList += "    `$timestamp = `$startTime.ToString('yyyyMMdd_HHmmss');"
     $argList += "    `$outputFile = Join-Path `$deviceFolders['$targetIP'] ('ping_summary_' + `$timestamp + '.txt');"
     $argList += "    `$pingCommand = 'ping $targetIP -n `$intervalSeconds';"
-    $argList += "    Write-Host 'Running continuous ping for $targetIP for `$intervalSeconds seconds.';"
+    $argList += "    Write-Host 'Running continuous ping on $targetIP for $intervalSeconds seconds.';"
     $argList += "    `$pingResults = Invoke-Expression `$pingCommand;"
     $argList += "    `$pingSummary = `$pingResults[-4..-1] -join '`n';"
     $argList += "    Out-File -InputObject `$pingSummary -FilePath `$outputFile -Append;"
-    $argList += "    Write-Host '`nElapsed Time: `$((Get-Date) - `$startTime) `n';"
+    $argList += "    Write-Host '`nElapsed Time: $elapsedTime `n';"
     $argList += "    Write-Host 'Last Ping Summary for $targetIP -';"
     $argList += "    Write-Host `$pingSummary;"
     $argList += "    Start-Sleep -Seconds `$intervalSeconds;"
