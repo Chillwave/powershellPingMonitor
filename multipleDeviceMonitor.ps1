@@ -18,41 +18,28 @@ foreach ($targetIP in $targetDevices) {
 
 Write-Host "Continuous ping started. Press Ctrl+C to exit."
 
-$scriptBlock = {
-    param ($targetIP, $deviceFolder, $intervalSeconds)
-    while ($true) {
-        $startTime = Get-Date
-        $timestamp = $startTime.ToString("yyyyMMdd_HHmmss") # Timestamp for file naming
-
-        $outputFile = Join-Path $deviceFolder ("ping_summary_" + $timestamp + ".txt")
-        $pingCommand = "ping $targetIP -n $intervalSeconds"
-
-        Write-Host "Running continuous ping for $targetIP for $intervalSeconds seconds."
-        $pingResults = Invoke-Expression $pingCommand
-        $pingSummary = $pingResults[-4..-1] -join "`n" # Get summary lines from the ping results
-
-        Out-File -InputObject $pingSummary -FilePath $outputFile -Append
-
-        Write-Host "`nElapsed Time: $((Get-Date) - $startTime) `n"
-        Write-Host "Last Ping Summary for $targetIP:"
-        Write-Host $pingSummary
-        Start-Sleep -Seconds $intervalSeconds
-    }
-}
-
-$jobs = @()
 foreach ($targetIP in $targetDevices) {
-    $job = Start-Job -ScriptBlock $scriptBlock -ArgumentList $targetIP, $deviceFolders[$targetIP], $intervalSeconds
-    $jobs += $job
-}
+    $argList = @()
+    $argList += "-Command"
+    $argList += "& {"
+    $argList += "`$intervalSeconds = $intervalSeconds;"
+    $argList += "`$outputRootDirectory = '$outputRootDirectory';"
+    $argList += "`$deviceFolders = @{ '$targetIP' = '$($deviceFolders[$targetIP])' };"
+    $argList += "while (`$true) {"
+    $argList += "    `$startTime = Get-Date;"
+    $argList += "    `$timestamp = `$startTime.ToString('yyyyMMdd_HHmmss');"
+    $argList += "    `$outputFile = Join-Path `$deviceFolders['$targetIP'] ('ping_summary_' + `$timestamp + '.txt');"
+    $argList += "    `$pingCommand = 'ping $targetIP -n `$intervalSeconds';"
+    $argList += "    Write-Host 'Running continuous ping for $targetIP for `$intervalSeconds seconds.';"
+    $argList += "    `$pingResults = Invoke-Expression `$pingCommand;"
+    $argList += "    `$pingSummary = `$pingResults[-4..-1] -join '`n';"
+    $argList += "    Out-File -InputObject `$pingSummary -FilePath `$outputFile -Append;"
+    $argList += "    Write-Host '`nElapsed Time: `$((Get-Date) - `$startTime) `n';"
+    $argList += "    Write-Host 'Last Ping Summary for $targetIP -';"
+    $argList += "    Write-Host `$pingSummary;"
+    $argList += "    Start-Sleep -Seconds `$intervalSeconds;"
+    $argList += "}"
+    $argList += "}"
 
-while ($true) {
-    # Wait for the jobs to complete
-    $jobs | Wait-Job
-    $jobs | Remove-Job
-    $jobs = @()
-    foreach ($targetIP in $targetDevices) {
-        $job = Start-Job -ScriptBlock $scriptBlock -ArgumentList $targetIP, $deviceFolders[$targetIP], $intervalSeconds
-        $jobs += $job
-    }
+    Start-Process -FilePath "powershell" -ArgumentList $argList
 }
